@@ -2,7 +2,8 @@
 #define UI_CONFIGURABLES_H_
 
 #include "sensesp.h"
-#include "sensesp/system/configurable.h"
+#include "sensesp/system/saveable.h"
+#include "sensesp/ui/config_item.h"
 
 using namespace sensesp;
 
@@ -10,18 +11,15 @@ using namespace sensesp;
  * @brief Configurable for a single float value.
  *
  */
-class FloatConfig : public Configurable {
+class FloatConfig : public FileSystemSaveable {
  public:
-  FloatConfig(float value, String config_path,
-             String description, int sort_order = 1000)
-      : value_(value),
-        Configurable(config_path, description, sort_order) {
-    load_configuration();
+  FloatConfig(float value, const String& config_path)
+      : FileSystemSaveable(config_path), value_(value) {
+    load();
   }
 
-  virtual void get_configuration(JsonObject& doc) override;
-  virtual bool set_configuration(const JsonObject& config) override;
-  virtual String get_config_schema() override;
+  virtual bool to_json(JsonObject& root) override;
+  virtual bool from_json(const JsonObject& config) override;
 
   float get_value() { return value_; }
 
@@ -29,22 +27,21 @@ class FloatConfig : public Configurable {
   float value_ = 0.0;
 };
 
+const String ConfigSchema(FloatConfig& obj);
+
 /**
  * @brief Configurable for a single int value.
  *
  */
-class IntConfig : public Configurable {
+class IntConfig : public FileSystemSaveable {
  public:
-  IntConfig(int value, String config_path,
-             String description, int sort_order = 1000)
-      : value_(value),
-        Configurable(config_path, description, sort_order) {
-    load_configuration();
+  IntConfig(int value, const String& config_path)
+      : FileSystemSaveable(config_path), value_(value) {
+    load();
   }
 
-  virtual void get_configuration(JsonObject& doc) override;
-  virtual bool set_configuration(const JsonObject& config) override;
-  virtual String get_config_schema() override;
+  virtual bool to_json(JsonObject& root) override;
+  virtual bool from_json(const JsonObject& config) override;
 
   int get_value() { return value_; }
 
@@ -52,52 +49,30 @@ class IntConfig : public Configurable {
   int value_ = 0;
 };
 
+const String ConfigSchema(IntConfig& obj);
+
 /**
  * @brief Configurable for a single boolean value, represented as a checkbox
  *
  */
-class CheckboxConfig : public Configurable {
+class CheckboxConfig : public FileSystemSaveable {
  public:
-  CheckboxConfig(bool value, String title, String config_path,
-                 String description, int sort_order = 1000)
-      : value_(value),
-        title_(title),
-        Configurable(config_path, description, sort_order) {
-    load_configuration();
+  CheckboxConfig(bool value, const String& title, const String& config_path)
+      : FileSystemSaveable(config_path), value_(value), title_(title) {
+    load();
   }
 
-  virtual void get_configuration(JsonObject& doc) override;
-  virtual bool set_configuration(const JsonObject& config) override;
-  virtual String get_config_schema() override;
+  virtual bool to_json(JsonObject& root) override;
+  virtual bool from_json(const JsonObject& config) override;
 
   bool get_value() { return value_; }
+  const String& get_title() { return title_; }
 
  protected:
   bool value_ = false;
   String title_ = "Enable";
 };
 
-/**
- * @brief Configurable for a single String.
- *
- */
-class StringConfig : public Configurable {
- public:
-  StringConfig(String& value, String& config_path, String& description,
-               int sort_order = 1000)
-      : value_(value), Configurable(config_path, description, sort_order) {
-    load_configuration();
-  }
-
-  virtual void get_configuration(JsonObject& doc) override;
-  virtual bool set_configuration(const JsonObject& config) override;
-  virtual String get_config_schema() override;
-
-  String get_value() { return value_; }
-
- protected:
-  String value_;
-  String title_ = "Value";
-};
+const String ConfigSchema(CheckboxConfig& obj);
 
 #endif  // UI_CONFIGURABLES_H_

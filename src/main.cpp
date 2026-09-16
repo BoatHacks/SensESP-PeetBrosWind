@@ -78,13 +78,9 @@ boolean checkDirDev(long cmps, int dev);
 void calcWindSpeedAndDir();
 void printDebug();
 
-ReactESP app;
-
 void setup()
 {
-    #ifndef SERIAL_DEBUG_DISABLED
-      SetupSerialDebug(115200);
-    #endif
+    SetupLogging();
 
     Serial.printf("SensESP-PeetBrosWind version v%s, built %s\n",VERSION,BUILD_TIMESTAMP);
 
@@ -99,8 +95,17 @@ void setup()
                   ->enable_system_info_sensors()
                   ->get_app();
 
-    debug = new CheckboxConfig(false, "debug", "/Settings/Debug Output on Serial", "Enable debug output to USB Serial (115200 8N1)", 700);
-    update_rate = new IntConfig(250, "/Settings/Update Rate", "Send data to SignalK server every n milliseconds", 400);
+    debug = new CheckboxConfig(false, "debug", "/Settings/Debug Output on Serial");
+    ConfigItem(debug)
+        ->set_title("Debug Output on Serial")
+        ->set_description("Enable debug output to USB Serial (115200 8N1)")
+        ->set_sort_order(700);
+
+    update_rate = new IntConfig(250, "/Settings/Update Rate");
+    ConfigItem(update_rate)
+        ->set_title("Update Rate")
+        ->set_description("Send data to SignalK server every n milliseconds")
+        ->set_sort_order(400);
 
     const char* speed_path = "environment.wind.speedApparent";
     const char* dir_path = "environment.wind.angleApparent";
@@ -111,19 +116,26 @@ void setup()
     speed_output = new SKOutputFloat(speed_path, speed_meta);
     dir_output = new SKOutputFloat(dir_path, dir_meta);
 
-    filter_gain = new FloatConfig(0.25, "/Settings/Filter Gain", "Filter gain on direction output filter. Range: 0.0 to 1.0, where 1.0 means no filtering. A smaller number increases the filtering.", 600);
-    dir_offset = new IntConfig(0, "/Settings/Direction Offset", "Offset (in degrees) between device-north and direction in which boat is pointing", 500);
+    filter_gain = new FloatConfig(0.25, "/Settings/Filter Gain");
+    ConfigItem(filter_gain)
+        ->set_title("Filter Gain")
+        ->set_description("Filter gain on direction output filter. Range: 0.0 to 1.0, where 1.0 means no filtering. A smaller number increases the filtering.")
+        ->set_sort_order(600);
+
+    dir_offset = new IntConfig(0, "/Settings/Direction Offset");
+    ConfigItem(dir_offset)
+        ->set_title("Direction Offset")
+        ->set_description("Offset (in degrees) between device-north and direction in which boat is pointing")
+        ->set_sort_order(500);
 
     pinMode(windSpeedPin, INPUT_PULLUP);
-    app.onInterrupt(windSpeedPin, FALLING, []() {readWindSpeed();});
+    event_loop()->onInterrupt(windSpeedPin, FALLING, []() {readWindSpeed();});
 
     pinMode(windDirPin, INPUT_PULLUP);
-    app.onInterrupt(windDirPin, FALLING, []() {readWindDir();});
+    event_loop()->onInterrupt(windDirPin, FALLING, []() {readWindDir();});
 
-    app.onRepeat(update_rate->get_value(), []() {calcWindSpeedAndDir();});
-    app.onRepeat(200, []() {if (debug->get_value()) {printDebug();}});
-
-    sensesp_app->start();
+    event_loop()->onRepeat(update_rate->get_value(), []() {calcWindSpeedAndDir();});
+    event_loop()->onRepeat(200, []() {if (debug->get_value()) {printDebug();}});
 }
 
 void IRAM_ATTR readWindSpeed()
@@ -280,8 +292,8 @@ void calcWindSpeedAndDir()
         prevSpeed = 0;
     }
 
-    speed_output->set_input((speedOut/100.0));
-    dir_output->set_input((dirOut*0.0174533));
+    speed_output->set((speedOut/100.0));
+    dir_output->set((dirOut*0.0174533));
 }
 
 void printDebug()
@@ -298,5 +310,5 @@ void printDebug()
 
 void loop()
 {
- app.tick();
+ event_loop()->tick();
 }
